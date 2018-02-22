@@ -1,8 +1,9 @@
 import os
 from flask import Flask, request, Response
 from slackclient import SlackClient 
-from twilio.twiml.messaging_response import Message, MessagingResponse 
-from twilio.rest import Client
+from twilio import twiml
+# from twilio.twiml.messaging_response import Message, MessagingResponse 
+from twilio.rest import TwilioRestClient
 
 SLACK_WEBHOOK_SECRET = os.environ.get('SLACK_WEBHOOK_SECRET', None)
 TWILIO_NUMBER = os.environ.get('TWILIO_NUMBER', None)
@@ -10,16 +11,19 @@ USER_NUMBER = os.environ.get('USER_NUMBER', None)
 
 app = Flask(__name__)
 slack_client = SlackClient(os.environ.get('SLACK_TOKEN', None))
-twilio_client = Client('TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN')
+twilio_client = TwilioRestClient()
 
 @app.route('/twilio', methods=['POST'])
 def twilio_post():
-  response = MessagingResponse()
+  response = twiml.Response()
+  # response = MessagingResponse()
   # print('Msgresponse', response)
 
   if request.form['From'] == USER_NUMBER:
     message = request.form['Body']
-    slack_client.api_call("chat.postMessage", channel="#general", text=message, username='twiliobot', icon_emoji=':robot_face:')
+    slack_client.api_call("chat.postMessage", channel="#general", 
+                          text=message, username='twiliobot', 
+                          icon_emoji=':robot_face:')
   return Response(response, mimetype="text/xml"), 200
 
 @app.route('/slack', methods=['POST'])
@@ -31,6 +35,11 @@ def slack_post():
     response_message = username + " in " + channel + " says: " + text
     twilio_client.messages.create(to=USER_NUMBER, from_=TWILIO_NUMBER,
                                   body=response_message)
+    # message = twilio_client.messages.create(
+    #   to="+15613023187",
+    #   from_="+12068994161",
+    #   body="Let's party")
+
   return Response(), 200
 
 
